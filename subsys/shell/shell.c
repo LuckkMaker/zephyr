@@ -142,6 +142,13 @@ static void tab_item_print(const struct shell *sh, const char *option,
 		return;
 	}
 
+	if (IS_ENABLED(CONFIG_SHELL_COMPLETION_ONE_COLUMN)) {
+		/* Vertical layout: one command per line */
+		z_shell_fprintf(sh, SHELL_OPTION, "\n%s%s", tab, option);
+		sh->ctx->vt100_ctx.printed_cmd++;
+		return;
+	}
+
 	longest_option += z_shell_strlen(tab);
 
 	columns = (sh->ctx->vt100_ctx.cons.terminal_wid

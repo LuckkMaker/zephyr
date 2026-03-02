@@ -136,6 +136,15 @@ config SHELL_TAB_AUTOCOMPLETION
 	  Enable commands and subcommands autocompletion with the Tab
 	  key. This function can be deactivated to save some flash.
 
+config SHELL_COMPLETION_ONE_COLUMN
+	bool "Display tab completion in one column"
+	depends on SHELL_TAB
+	default n
+	help
+	  When enabled, Tab completion lists one command per line (vertical
+	  layout). When disabled, multiple commands are shown per line
+	  according to terminal width.
+
 config SHELL_ASCII_FILTER
 	bool "Filter incoming ASCII characters"
 	default y
