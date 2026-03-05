@@ -42,10 +42,18 @@ config CMSIS_DAP_DEVICE_NAME
 	default ""
 
 config DAP_BACKEND_USB
-	bool "USB backend"
+	bool "USB backend (single packet)"
 	depends on USB_DEVICE_STACK_NEXT
 	help
-	  DAP USB backend using bulk endpoints.
+	  DAP USB backend using bulk endpoints (one request, one response at a time).
+
+config DAP_BACKEND_USB_QUEUE
+	bool "USB backend with command queue (CMSIS-DAP Queue Commands)"
+	depends on USB_DEVICE_STACK_NEXT
+	depends on !DAP_BACKEND_USB
+	help
+	  DAP USB backend with request/response queues and DAP_QueueCommands (0x7E)
+	  support. Allows multiple packets to be queued before execution.
 
 module = DAP
 module-str = dap
