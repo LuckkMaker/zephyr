@@ -16,6 +16,9 @@
 #include <zephyr/usb/usbd.h>
 #include <zephyr/usb/usb_ch9.h>
 #include <zephyr/usb/class/usb_cdc.h>
+#if defined(CONFIG_USBD_CDC_ACM_RX_PACKET_CALLBACK)
+#include <zephyr/usb/class/usbd_cdc_acm.h>
+#endif
 
 #include <zephyr/drivers/usb/udc.h>
 
@@ -122,6 +125,12 @@ struct cdc_acm_uart_data {
 	struct k_work_delayable tx_fifo_work;
 	/* USBD CDC ACM RX fifo work */
 	struct k_work rx_fifo_work;
+#if defined(CONFIG_USBD_CDC_ACM_RX_PACKET_CALLBACK)
+	/** Optional: one Bulk OUT packet per call; must copy data before return */
+	void (*rx_packet_cb)(const struct device *dev, const uint8_t *data,
+			     size_t len, void *user_data);
+	void *rx_packet_cb_user_data;
+#endif
 	atomic_t state;
 	struct k_sem notif_sem;
 	struct k_spinlock lock;
@@ -309,11 +318,19 @@ static int usbd_cdc_acm_request(struct usbd_class_data *const c_data,
 		size_t done;
 
 		LOG_HEXDUMP_INF(buf->data, buf->len, "");
-		done = ring_buf_put(data->rx_fifo.rb, buf->data, buf->len);
-		if (done && data->cb) {
-			cdc_acm_work_submit(&data->irq_cb_work);
+#if defined(CONFIG_USBD_CDC_ACM_RX_PACKET_CALLBACK)
+		if (data->rx_packet_cb != NULL && buf->len > 0) {
+			data->rx_packet_cb(dev, buf->data, buf->len,
+					   data->rx_packet_cb_user_data);
+			/* Callback must have copied data; buf is freed below */
+		} else
+#endif
+		{
+			done = ring_buf_put(data->rx_fifo.rb, buf->data, buf->len);
+			if (done && data->cb) {
+				cdc_acm_work_submit(&data->irq_cb_work);
+			}
 		}
-
 		atomic_clear_bit(&data->state, CDC_ACM_RX_FIFO_BUSY);
 		cdc_acm_work_submit(&data->rx_fifo_work);
 	}
@@ -1130,6 +1147,18 @@ static int usbd_cdc_acm_preinit(const struct device *dev)
 
 	return 0;
 }
+
+#if defined(CONFIG_USBD_CDC_ACM_RX_PACKET_CALLBACK)
+void usbd_cdc_acm_register_rx_packet_cb(const struct device *dev,
+					 usbd_cdc_acm_rx_packet_cb_t cb,
+					 void *user_data)
+{
+	struct cdc_acm_uart_data *data = dev->data;
+
+	data->rx_packet_cb = cb;
+	data->rx_packet_cb_user_data = user_data;
+}
+#endif
 
 static DEVICE_API(uart, cdc_acm_uart_api) = {
 	.irq_tx_enable = cdc_acm_irq_tx_enable,

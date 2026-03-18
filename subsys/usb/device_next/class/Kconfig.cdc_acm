@@ -37,6 +37,18 @@ config USBD_CDC_ACM_BUF_POOL
 	  ACM instances and the size of the bulk endpoints. When disabled, the
 	  implementation uses the UDC driver's pool.
 
+config USBD_CDC_ACM_RX_PACKET_CALLBACK
+	bool "Optional RX packet callback (one USB packet per callback)"
+	default n
+	help
+	  When enabled, application can register a callback via
+	  usbd_cdc_acm_register_rx_packet_cb(). Each completed Bulk OUT transfer
+	  is delivered as one packet (data + len) to the callback instead of
+	  being pushed to the UART ring buffer. Useful for packet-based
+	  protocols (e.g. command/response). Callback runs in USB stack context;
+	  it must copy data before return. When no callback is registered or
+	  callback is NULL, behavior falls back to normal ring buffer.
+
 module = USBD_CDC_ACM
 module-str = usbd cdc_acm
 default-count = 1
