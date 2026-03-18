@@ -187,9 +187,7 @@ static void dap_queue_process_work(struct k_work *work)
 				req[0] = ID_DAP_EXECUTE_COMMANDS;
 			}
 			resp_len = dap_execute_cmd(req, resp);
-			if (resp_len > DAP_QUEUE_PACKET_SIZE_MAX) {
-				resp_len = DAP_QUEUE_PACKET_SIZE_MAX;
-			}
+			resp_len = MIN((uint16_t)resp_len, DAP_QUEUE_PACKET_SIZE_MAX);
 			data->response_len[data->response_index_i] = (uint16_t)resp_len;
 
 			data->request_index_o++;
